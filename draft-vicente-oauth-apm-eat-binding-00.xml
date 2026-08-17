@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rfc [
+  <!ENTITY nbsp "&#160;">
+]>
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude"
+     category="info"
+     docName="draft-vicente-oauth-apm-eat-binding-00"
+     ipr="trust200902"
+     submissionType="IETF"
+     xml:lang="en"
+     version="3">
+
+  <front>
+    <title abbrev="OAuth APM EAT Binding">OAuth 2.0 APM Binding to Entity Attestation Tokens</title>
+    <seriesInfo name="Internet-Draft" value="draft-vicente-oauth-apm-eat-binding-00"/>
+
+    <author initials="B." surname="Vicente" fullname="Brian Vicente">
+      <organization>Sanctum SecOps LLC</organization>
+      <address>
+        <postal><city>Pine City</city><region>NY</region><country>United States of America</country></postal>
+        <email>brian@sso-labs.com</email>
+        <uri>https://orcid.org/0009-0006-6395-5308</uri>
+      </address>
+    </author>
+
+    <date year="2026" month="August" day="16"/>
+    <area>Security</area>
+    <workgroup>OAuth</workgroup>
+    <keyword>oauth</keyword>
+    <keyword>attestation</keyword>
+    <keyword>EAT</keyword>
+    <keyword>posture</keyword>
+    <keyword>device attestation</keyword>
+    <keyword>authorization</keyword>
+    <keyword>zero trust</keyword>
+    <keyword>post-quantum</keyword>
+
+    <abstract>
+      <t>This document specifies how the Authorization Posture Mechanism (APM) binds to Entity Attestation Tokens (EATs) to provide cryptographically verified device posture evidence within OAuth 2.0 authorization flows. By binding APM posture claims to EAT attestation evidence, authorization servers obtain a tamper-evident, cryptographically signed assertion of the client device's security state at the moment of authorization, enabling fine-grained, zero-trust access decisions.</t>
+      <t>This binding enables relying parties and authorization servers to enforce posture-based authorization policies with cryptographic assurance, bridging the gap between device attestation and OAuth 2.0 token issuance.</t>
+    </abstract>
+
+    <note title="Source and Archival" removeInRFC="true">
+      <t>
+        Source for this draft is maintained at
+        <eref target="https://github.com/Sanc-Admin/oauth-apm-eat-binding">https://github.com/Sanc-Admin/oauth-apm-eat-binding</eref>.
+        Author ORCID iD:
+        <eref target="https://orcid.org/0009-0006-6395-5308">https://orcid.org/0009-0006-6395-5308</eref>.
+        Reference implementation and JSON evidence: CygnetLib
+        (<eref target="https://github.com/sanctumsecopsmssp/CygnetLib">https://github.com/sanctumsecopsmssp/CygnetLib</eref>).
+      </t>
+    </note>
+
+    <note title="IPR Considerations" removeInRFC="true">
+      <t>
+        Sanctum IP Co (a Delaware corporation, assignee of Sanctum SecOps LLC) holds or
+        intends to file patent or other intellectual property rights covering subject matter described in this
+        document. By posting this Internet-Draft, the author submits to the IETF Trust the rights described
+        in BCP 78 and BCP 79. All intellectual property described in this document is owned by Sanctum IP Co,
+        128 Dry Run Rd, Pine City, NY 14871. Contact: brian@sso-labs.com.
+      </t>
+    </note>
+
+  </front>
+
+  <middle>
+
+    <section anchor="introduction" numbered="true">
+      <name>Introduction</name>
+      <t>
+        The Authorization Posture Mechanism (APM), defined in
+        <xref target="I-D.vicente-oauth-apm"/>, provides a structured framework for
+        expressing client device security posture within OAuth 2.0 authorization flows.
+        Entity Attestation Tokens (EATs), defined in <xref target="I-D.ietf-rats-eat"/>,
+        provide a compact, signed token format for conveying device attestation evidence
+        from an attester to a verifier. This document defines a binding between APM and
+        EAT so that posture claims carried in APM are cryptographically backed by EAT
+        attestation evidence.
+      </t>
+      <t>
+        Without this binding, APM posture claims are assertions whose truthfulness depends
+        on the integrity of the channel carrying them. By binding posture claims to EAT
+        evidence, the authorization server can verify that the claimed posture corresponds
+        to a cryptographically attested device state, materially raising the assurance
+        level of posture-based authorization decisions.
+      </t>
+
+      <section anchor="motivation" numbered="true">
+        <name>Motivation</name>
+        <t>
+          Zero-trust architectures require continuous, verifiable evidence of device
+          security state. OAuth 2.0 authorization servers that issue access tokens based
+          on device posture need stronger assurance than self-asserted posture claims.
+          EAT provides the attestation primitive; APM provides the posture taxonomy and
+          the OAuth integration. This document connects them.
+        </t>
+        <t>
+          A Cryptographically Relevant Quantum Computer (CRQC) would threaten the
+          classical signatures currently used to protect attestation evidence. This
+          binding is therefore specified to accommodate post-quantum signature algorithms
+          (e.g., ML-DSA <xref target="FIPS204"/>) in the EAT proof layer, ensuring that
+          posture evidence remains verifiable in a post-quantum environment.
+        </t>
+      </section>
+
+      <section anchor="scope" numbered="true">
+        <name>Scope</name>
+        <t>
+          This document defines the APM-EAT binding for OAuth 2.0 authorization code and
+          device authorization grant flows. It specifies how an EAT token is presented
+          alongside an APM posture assertion, how the authorization server validates the
+          binding, and how posture claims in the APM map to evidence claims in the EAT.
+          Token formats, signature algorithms, and policy evaluation are referenced from
+          their defining specifications and are not redefined here.
+        </t>
+      </section>
+
+      <section anchor="terminology" numbered="true">
+        <name>Terminology</name>
+        <dl newline="true" spacing="normal">
+          <dt>APM:</dt>
+          <dd>The Authorization Posture Mechanism defined in
+          <xref target="I-D.vicente-oauth-apm"/>.</dd>
+          <dt>EAT:</dt>
+          <dd>An Entity Attestation Token as defined in
+          <xref target="I-D.ietf-rats-eat"/>.</dd>
+          <dt>Posture Claim:</dt>
+          <dd>A structured assertion about a device security property carried in an
+          APM object.</dd>
+          <dt>Evidence Claim:</dt>
+          <dd>A cryptographically attested property carried in an EAT token.</dd>
+          <dt>Binding Hash:</dt>
+          <dd>A hash that cryptographically binds an APM posture assertion to the EAT
+          evidence that supports it.</dd>
+        </dl>
+      </section>
+    </section>
+
+    <section anchor="conventions" numbered="true">
+      <name>Conventions and Definitions</name>
+      <t>
+        The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+        "OPTIONAL" in this document are to be interpreted as described in
+        BCP 14 <xref target="RFC2119"/> <xref target="RFC8174"/> when, and only when, they
+        appear in all capitals as shown here.
+      </t>
+    </section>
+
+    <section anchor="binding-model" numbered="true">
+      <name>APM-EAT Binding Model</name>
+
+      <section anchor="binding-overview" numbered="true">
+        <name>Overview</name>
+        <t>
+          In the binding model defined by this document, a client (or an attestation
+          service acting on its behalf) obtains an EAT token from a device attester and
+          presents it to the authorization server as part of an OAuth 2.0 authorization
+          request. The EAT token is referenced from the APM posture object via a binding
+          hash, so that the authorization server can verify that the posture claims are
+          backed by the specific attestation evidence identified by the hash.
+        </t>
+        <t>
+          The binding is integrity-protecting: the binding hash ensures that the posture
+          claims cannot be separated from the evidence that backs them, and that the
+          evidence cannot be substituted for different evidence after the binding is
+          established.
+        </t>
+      </section>
+
+      <section anchor="binding-structure" numbered="true">
+        <name>Binding Structure</name>
+        <t>
+          The APM posture object is extended with an <tt>eat_binding</tt> member carrying
+          the binding metadata. The structure is expressed in CBOR, consistent with the
+          EAT CBOR encoding <xref target="I-D.ietf-rats-eat"/>.
+        </t>
+        <sourcecode type="cbor"><![CDATA[
+apm-eat-binding = {
+  eat_token_ref:    bstr,       ; hash of the referenced EAT token
+  eat_hash_alg:     int / tstr, ; hash algorithm identifier
+  claim_bindings:    [ *claim-binding ],
+}
+
+claim-binding = {
+  posture_claim_id:  tstr,     ; APM posture claim identifier
+  evidence_claim_id:  tstr,     ; EAT evidence claim identifier
+  match_mode:        match-mode,
+}
+
+match-mode = &(
+  exact:     0,
+  threshold:  1,
+  superset:   2,
+)
+        ]]></sourcecode>
+        <dl newline="true" spacing="normal">
+          <dt>eat_token_ref:</dt>
+          <dd>A hash of the DER or CBOR encoding of the referenced EAT token, computed
+          using the algorithm in <tt>eat_hash_alg</tt>. This binds the APM posture
+          object to a specific EAT instance.</dd>
+          <dt>eat_hash_alg:</dt>
+          <dd>Identifier for the hash algorithm used in <tt>eat_token_ref</tt>. MUST be
+          SHA-256 or stronger; SHA-384 is RECOMMENDED. In post-quantum deployments,
+          SHAKE256 is RECOMMENDED.</dd>
+          <dt>claim_bindings:</dt>
+          <dd>A list of bindings between individual posture claims in the APM object and
+          evidence claims in the EAT token. Each entry declares which evidence claim
+          supports which posture claim and the mode of matching.</dd>
+          <dt>match_mode:</dt>
+          <dd>Declares how the posture claim value is evaluated against the evidence
+          claim value. <tt>exact</tt> requires equality; <tt>threshold</tt> requires the
+          posture value to meet or exceed the evidence value (for numeric posture
+          scores); <tt>superset</tt> requires the posture claim to be a superset of the
+          attested evidence.</dd>
+        </dl>
+      </section>
+
+      <section anchor="token-presentation" numbered="true">
+        <name>EAT Token Presentation</name>
+        <t>
+          The EAT token is presented to the authorization server as a separate OAuth 2.0
+          request parameter named <tt>eat</tt>, or via a token introspection endpoint
+          extension when the EAT is held by a third-party verifier. The authorization
+          server MUST retrieve or receive the full EAT token whose encoding hashes to the
+          value in <tt>eat_token_ref</tt> before making an authorization decision.
+        </t>
+        <t>
+          When presented as a request parameter, the EAT token MUST be a CBOR-encoded
+          EAT (CWT Claim Set) signed using COSE_Sign1 <xref target="RFC9052"/>. When the
+          EAT uses a JWT profile, the <tt>eat</tt> parameter carries the compact-serialized
+          JWT.
+        </t>
+      </section>
+    </section>
+
+    <section anchor="validation" numbered="true">
+      <name>Authorization Server Validation Procedure</name>
+      <t>
+        Upon receiving an authorization request carrying an APM posture object with an
+        <tt>eat_binding</tt> member, the authorization server MUST perform the following
+        validation steps before issuing a token:
+      </t>
+      <ol spacing="normal">
+        <li>Verify that the <tt>eat_token_ref</tt> hash algorithm is acceptable per
+        deployment policy.</li>
+        <li>Retrieve the EAT token referenced by <tt>eat_token_ref</tt>.</li>
+        <li>Compute the hash of the retrieved EAT token encoding using
+        <tt>eat_hash_alg</tt> and verify it equals <tt>eat_token_ref</tt>. If the hash
+        does not match, the binding is broken and the request MUST be rejected.</li>
+        <li>Verify the EAT token signature using the attester's trust anchor. If
+        signature verification fails, the request MUST be rejected.</li>
+        <li>For each entry in <tt>claim_bindings</tt>, locate the referenced posture
+        claim in the APM object and the referenced evidence claim in the EAT token.</li>
+        <li>Evaluate each binding according to its <tt>match_mode</tt>. If any binding
+        does not satisfy its match condition, the posture claim is unsupported and MUST
+        NOT be used as the basis for an authorization decision.</li>
+        <li>Verify that the EAT token is within its validity window (not expired, not
+        prematurely used) and that the attestation freshness satisfies deployment
+        policy.</li>
+      </ol>
+      <t>
+        If all validations succeed, the authorization server MAY use the posture claims
+        referenced by valid bindings as authenticated inputs to its authorization policy
+        evaluation. Posture claims not referenced by any binding remain unverified
+        assertions and SHOULD be treated accordingly.
+      </t>
+    </section>
+
+    <section anchor="freshness" numbered="true">
+      <name>Attestation Freshness</name>
+      <t>
+        EAT tokens carry attestation evidence captured at a point in time. Posture may
+        change between attestation and authorization. To mitigate staleness, the
+        authorization server SHOULD enforce a maximum attestation age, measured from the
+        EAT issuance time to the authorization request receipt time. The RECOMMENDED
+        maximum age is 300 seconds for high-assurance deployments; deployments MAY define
+        a longer window for lower-assurance use cases.
+      </t>
+      <t>
+        For stronger freshness, the authorization server MAY issue a nonce in a
+        pre-authorization step and require the EAT token to include that nonce in its
+        evidence claims. The authorization server then verifies the nonce, ensuring the
+        attestation was generated in response to the current authorization request.
+      </t>
+    </section>
+
+    <section anchor="requirements" numbered="true">
+      <name>Requirements</name>
+      <t><strong>REQ-APM-EAT-1: Binding Hash Required.</strong>
+      An APM posture object that claims EAT-backed evidence MUST include an
+      <tt>eat_binding</tt> member with a valid <tt>eat_token_ref</tt>.</t>
+      <t><strong>REQ-APM-EAT-2: Hash Algorithm Strength.</strong>
+      The <tt>eat_hash_alg</tt> MUST be SHA-256 or stronger.</t>
+      <t><strong>REQ-APM-EAT-3: Signature Verification.</strong>
+      The authorization server MUST verify the EAT token signature before trusting any
+      bound posture claim.</t>
+      <t><strong>REQ-APM-EAT-4: Freshness Enforcement.</strong>
+      The authorization server SHOULD enforce a maximum attestation age and MAY require
+      nonce-based freshness for high-assurance deployments.</t>
+      <t><strong>REQ-APM-EAT-5: Unverified Claim Handling.</strong>
+      Posture claims not backed by a valid EAT binding MUST be treated as unverified
+      assertions and SHOULD NOT be used as the sole basis for privileged authorization
+      decisions.</t>
+      <t><strong>REQ-APM-EAT-6: Post-Quantum Readiness.</strong>
+      EAT tokens used in this binding SHOULD support post-quantum signature algorithms
+      (e.g., ML-DSA, SLH-DSA) in the COSE_Sign1 layer to ensure long-term verifiability
+      of attestation evidence.</t>
+    </section>
+
+    <section anchor="security" numbered="true">
+      <name>Security Considerations</name>
+
+      <section anchor="sec-binding-strength" numbered="true">
+        <name>Binding Hash Strength</name>
+        <t>
+          The security of the APM-EAT binding depends on the collision and preimage
+          resistance of <tt>eat_hash_alg</tt>. An attacker who can find a second EAT
+          token with the same hash could substitute evidence while preserving the binding.
+          SHA-256 provides 128 bits of collision resistance, which is adequate for current
+          deployments. In post-quantum deployments, SHAKE256 with at least 256 bits of
+          output is RECOMMENDED to preserve security margins against Grover's algorithm.
+        </t>
+      </section>
+
+      <section anchor="sec-replay" numbered="true">
+        <name>Replay and Substitution</name>
+        <t>
+          A captured EAT token could be replayed in a later authorization request. The
+          binding hash alone does not prevent replay, because the hash is deterministic.
+          Replay prevention is the responsibility of the freshness mechanisms defined in
+          <xref target="freshness"/>. Deployments that omit freshness enforcement accept
+          the risk that a stale EAT token may be replayed to support a posture claim that
+          no longer holds.
+        </t>
+        <t>
+          Substitution of a posture object while reusing a legitimate EAT token is
+          prevented by the binding hash: the hash is computed over the EAT token, not the
+          posture object, so a different posture object referencing the same EAT token
+          must still pass per-claim binding validation. An attacker cannot attach
+          unsupported posture claims to a legitimate EAT token, because the
+          <tt>claim_bindings</tt> entries are validated against actual evidence claims in
+          the EAT.
+        </t>
+      </section>
+
+      <section anchor="sec-attester-trust" numbered="true">
+        <name>Attester Trust Anchors</name>
+        <t>
+          The authorization server must hold trust anchors for the attesters whose EAT
+          tokens it accepts. Compromise of an attester key permits the generation of
+          fraudulent evidence. Deployments SHOULD rotate attester keys and SHOULD
+          distribute attester key compromise via a revocation mechanism. In a
+          post-quantum deployment, attester keys SHOULD use post-quantum algorithms to
+          prevent retrospective forgery.
+        </t>
+      </section>
+
+      <section anchor="sec-privacy" numbered="true">
+        <name>Privacy of Attestation Evidence</name>
+        <t>
+          EAT tokens may carry device-identifying evidence. The APM-EAT binding does not
+          add additional identifying information, but the EAT itself may reveal hardware
+          serial numbers, firmware versions, or other unique identifiers. Deployments
+          SHOULD use EAT profiles that minimize correlatable identifiers and SHOULD
+          consider unlinkability techniques where supported by the attester.
+        </t>
+      </section>
+    </section>
+
+    <section anchor="iana" numbered="true">
+      <name>IANA Considerations</name>
+      <t>
+        This document has no IANA actions. The APM-EAT binding uses existing CBOR labels
+        and OAuth 2.0 parameter namespaces defined in their respective specifications. If
+        future revisions require dedicated registry entries, this section will be updated
+        to specify the requested allocations.
+      </t>
+    </section>
+
+    <section anchor="acknowledgements" numbered="true">
+      <name>Acknowledgements</name>
+      <t>
+        The author thanks the members of the relevant IETF working groups for their
+        review and feedback. Particular thanks to colleagues at Sanctum SecOps LLC for
+        technical discussion and to the broader IETF community for continued review of
+        post-quantum migration and authorization posture work.
+      </t>
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC6749.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC9052.xml"/>
+    </references>
+
+    <references title="Informative References">
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml3/reference.I-D.ietf-rats-eat.xml"/>
+      <reference anchor="I-D.vicente-oauth-apm">
+        <front><title>OAuth 2.0 Authorization Posture Mechanism</title>
+        <author initials="B." surname="Vicente" fullname="Brian Vicente">
+        <organization>Sanctum SecOps LLC</organization></author>
+        <date year="2026" month="August"/></front>
+        <seriesInfo name="Internet-Draft" value="draft-vicente-oauth-apm"/>
+      </reference>
+      <reference anchor="FIPS204">
+        <front><title>Module-Lattice-Based Digital Signature Standard</title>
+        <author><organization>NIST</organization></author>
+        <date year="2024" month="August"/></front>
+        <seriesInfo name="FIPS" value="204"/>
+      </reference>
+    </references>
+  </back>
+
+</rfc>
