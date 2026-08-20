@@ -18,12 +18,12 @@
       <organization>Sanctum SecOps LLC</organization>
       <address>
         <postal><city>Pine City</city><region>NY</region><country>United States of America</country></postal>
-        <email>brian@sso-labs.com</email>
+        <email>bvicente@sanctumsecops.com</email>
         <uri>https://orcid.org/0009-0006-6395-5308</uri>
       </address>
     </author>
 
-    <date year="2026" month="August" day="16"/>
+    <date year="2026" month="August" day="20"/>
     <area>Security</area>
     <workgroup>OAuth</workgroup>
     <keyword>oauth</keyword>
@@ -57,7 +57,7 @@
         intends to file patent or other intellectual property rights covering subject matter described in this
         document. By posting this Internet-Draft, the author submits to the IETF Trust the rights described
         in BCP 78 and BCP 79. All intellectual property described in this document is owned by Sanctum IP Co,
-        128 Dry Run Rd, Pine City, NY 14871. Contact: brian@sso-labs.com.
+        128 Dry Run Rd, Pine City, NY 14871. Contact: bvicente@sanctumsecops.com.
       </t>
     </note>
 
@@ -70,7 +70,7 @@
       <t>
         The Authorization Posture Mechanism (APM), defined in
         <xref target="I-D.vicente-oauth-apm"/>, provides a structured framework for
-        expressing client device security posture within OAuth 2.0 authorization flows.
+        expressing client device security posture within OAuth 2.0 <xref target="RFC6749"/> authorization flows.
         Entity Attestation Tokens (EATs), defined in <xref target="I-D.ietf-rats-eat"/>,
         provide a compact, signed token format for conveying device attestation evidence
         from an attester to a verifier. This document defines a binding between APM and
@@ -393,8 +393,8 @@ match-mode = &(
     <references title="Normative References">
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
       <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
-      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC6749.xml"/>
-      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC9052.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.6749.xml"/>
+      <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9052.xml"/>
     </references>
 
     <references title="Informative References">
