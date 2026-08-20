@@ -70,7 +70,7 @@
       <t>
         The Authorization Posture Mechanism (APM), defined in
         <xref target="I-D.vicente-oauth-apm"/>, provides a structured framework for
-        expressing client device security posture within OAuth 2.0 authorization flows.
+        expressing client device security posture within OAuth 2.0 <xref target="RFC6749"/> authorization flows.
         Entity Attestation Tokens (EATs), defined in <xref target="I-D.ietf-rats-eat"/>,
         provide a compact, signed token format for conveying device attestation evidence
         from an attester to a verifier. This document defines a binding between APM and
