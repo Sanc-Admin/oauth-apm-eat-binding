@@ -1,14 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE rfc [
-  <!ENTITY nbsp "&#160;">
+<!ENTITY nbsp "&#160;">
 ]>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude"
-     category="info"
-     docName="draft-vicente-oauth-apm-eat-binding-00"
-     ipr="trust200902"
-     submissionType="IETF"
-     xml:lang="en"
-     version="3">
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude" category="info" docName="draft-vicente-oauth-apm-eat-binding-00" ipr="trust200902" submissionType="IETF" xml:lang="en" version="3">
 
   <front>
     <title abbrev="OAuth APM EAT Binding">OAuth 2.0 APM Binding to Entity Attestation Tokens</title>
@@ -25,7 +19,7 @@
 
     <date year="2026" month="August" day="20"/>
     <area>Security</area>
-    <workgroup>OAuth</workgroup>
+    <workgroup>Web Authorization Protocol</workgroup>
     <keyword>oauth</keyword>
     <keyword>attestation</keyword>
     <keyword>EAT</keyword>
@@ -175,7 +169,7 @@
           the binding metadata. The structure is expressed in CBOR, consistent with the
           EAT CBOR encoding <xref target="I-D.ietf-rats-eat"/>.
         </t>
-        <sourcecode type="cbor"><![CDATA[
+        <sourcecode type="cbor">
 apm-eat-binding = {
   eat_token_ref:    bstr,       ; hash of the referenced EAT token
   eat_hash_alg:     int / tstr, ; hash algorithm identifier
@@ -188,12 +182,12 @@ claim-binding = {
   match_mode:        match-mode,
 }
 
-match-mode = &(
+match-mode = &amp;(
   exact:     0,
   threshold:  1,
   superset:   2,
 )
-        ]]></sourcecode>
+        </sourcecode>
         <dl newline="true" spacing="normal">
           <dt>eat_token_ref:</dt>
           <dd>A hash of the DER or CBOR encoding of the referenced EAT token, computed
